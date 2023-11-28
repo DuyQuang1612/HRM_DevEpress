@@ -1,0 +1,94 @@
+﻿@using DevExtreme.AspNet.Data
+@using DevExtreme.AspNet.Mvc;
+@using HRM_DevEpress.Controllers;
+@using HRM_DevEpress.Models;
+@using HRM_DevEpress.Common;
+
+@model ChucVu;
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Home Page";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/7.10.1/polyfill.min.js"></script>
+@* <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script> *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+@(Html.DevExtreme().DataGrid<ChucVu>()
+                .ID("gridContainer")
+                .SearchPanel(searchPanel => searchPanel
+                .Visible(true)
+                .Width(240)
+                .Placeholder("Tìm kiếm")
+                )
+                .Editing(e => e
+                .Mode(GridEditMode.Popup)
+                .AllowUpdating(true)
+                .AllowDeleting(true)
+                .AllowAdding(true)
+                .Popup(p => p
+                .Title("Thêm/Sửa chức vụ")
+                .ShowTitle(true)
+                .Width(650)
+                .Height(500)
+                )
+                .Form(f => f.Items(items =>
+                {
+                    items.AddGroup()
+                    .ColCount(2)
+                    .ColSpan(2)
+                    .Items(groupItems =>
+                    {
+                        groupItems.AddSimpleFor(m => m.MaChucVu);
+                        groupItems.AddSimpleFor(m => m.TenChucVu);
+                        @* groupItems.AddSimpleFor(m => m.ThoiGianTao); *@
+                        groupItems.AddSimpleFor(m => m.NguoiTao);
+                    });
+                }))
+                )
+                .ShowBorders(true)
+                 .Scrolling(scrolling => scrolling.ColumnRenderingMode(GridColumnRenderingMode.Virtual))
+                .Paging(paging => paging.PageSize(10))
+                .Pager(pager =>
+                {
+                    pager.Visible(true);
+                    pager.DisplayMode(GridPagerDisplayMode.Full);
+                    pager.ShowPageSizeSelector(true);
+                    pager.AllowedPageSizes(new int[] { 10, 20, 30, 40 });
+                    pager.ShowInfo(true);
+                    pager.ShowNavigationButtons(true);
+                })
+                .ColumnMinWidth(150)
+                @*  .Height(UICommonConsts.GRID_HEIGHT_DEFAULT) *@
+                @* .Export(e => e.Enabled(true)) *@
+                @*  .OnExporting("exporting") *@
+                .Columns(columns =>
+                {
+                    columns.AddFor(m => m.MaChucVu).AllowResizing(true).Caption("Mã chức vụ").AllowEditing(true);
+                    columns.AddFor(m => m.TenChucVu).AllowResizing(true).Caption("Tên chức vụ");
+                    columns.AddFor(m => m.ThoiGianTao).AllowResizing(true).Caption("Thời gian tạo").SortOrder(SortOrder.Desc);
+                    columns.AddFor(m => m.NguoiTao).AllowResizing(true).Caption("Người tạo");
+                    columns.AddFor(m => m.Id).AllowResizing(true).Caption("Id").Visible(false);
+                })
+                .OnInitNewRow("OnInitNewRow")
+                .OnEditingStart("OnRowUpdating")
+                .DataSource(d => d.Mvc()
+                .Controller(typeof(ChucVuController).GetControllerName())
+                .LoadAction(nameof(ChucVuController.LoadData)).LoadMethod("GET")
+                .InsertAction(nameof(ChucVuController.Insert)).InsertMethod("POST")
+                .UpdateAction(nameof(ChucVuController.Update)).UpdateMethod("POST")
+                .DeleteAction(nameof(ChucVuController.Delete)).DeleteMethod("POST")
+                .Key(nameof(ChucVu.Id))
+                )
+                )
+<script>
+    function OnRowUpdating(e) {
+        setAllowEditing(e, false);
+    }
+    function OnInitNewRow(e) {
+        setAllowEditing(e, true);
+
+    }
+    function setAllowEditing(e, isUpdate) {
+        e.component.columnOption("MaChucVu", "allowEditing", isUpdate);
+    }
+</script>

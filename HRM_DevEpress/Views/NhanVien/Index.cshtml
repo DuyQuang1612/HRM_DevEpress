@@ -1,0 +1,192 @@
+﻿@using DevExtreme.AspNet.Data
+@using DevExtreme.AspNet.Mvc;
+@using HRM_DevEpress.Controllers;
+@using HRM_DevEpress.Models;
+@using HRM_DevEpress.Common;
+
+@model NhanVien;
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Home Page";
+}
+@* SaveFileExcel *@
+@* <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/7.10.1/polyfill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> *@
+
+<div class="row">
+    <div class="container">
+        <select class="form-control" asp-for="@Model.PhongBanId" class="form-control" style="width:350px">
+            @foreach (var item in Model.PhongBans)
+            {
+                <option value="@item.Value">@item.Name</option>
+            }
+        </select>
+    </div>
+</div>
+@(Html.DevExtreme().DataGrid<NhanVien>()
+                .ID("gridContainer")
+                .SearchPanel(searchPanel => searchPanel
+                .Visible(true)
+                .Width(240)
+                .Placeholder("Tìm kiếm")
+                )
+                .Editing(e => e
+                .Mode(GridEditMode.Popup)
+                .AllowUpdating(true)
+                .AllowDeleting(true)
+                .AllowAdding(true)
+                .Popup(p => p
+                .Title("Thêm/Sửa nhân viên")
+                .ShowTitle(true)
+                .Width(650)
+                .Height(500)
+                )
+                .Form(f => f.Items(items =>
+                {
+                    items.AddGroup()
+                    .ColCount(2)
+                    .ColSpan(2)
+                    .Items(groupItems =>
+                    {
+                        groupItems.AddSimpleFor(m => m.MaNhanVien);
+                        groupItems.AddSimpleFor(m => m.TenNhanVien);
+                        groupItems.AddSimpleFor(m => m.NgaySinh);
+                        groupItems.AddSimpleFor(m => m.NguoiTao);
+                        groupItems.AddSimpleFor(m => m.PhongBanId);
+                        groupItems.AddSimpleFor(m => m.ChucVuId);
+                        groupItems.AddSimpleFor(m => m.GioiTinh);
+                        groupItems.AddSimpleFor(m => m.DienThoai).IsRequired(false);
+                        groupItems.AddSimpleFor(m => m.Email).IsRequired(false);
+                        groupItems.AddSimpleFor(m => m.QueQuan).IsRequired(false);
+                        groupItems.AddSimpleFor(m => m.CCCD).IsRequired(false);
+                        groupItems.AddSimpleFor(m => m.NgayTao).IsRequired(true); 
+
+                    });
+                }))
+                )
+                .Height(500)
+                .ShowBorders(true)
+                 .Scrolling(scrolling => scrolling.ColumnRenderingMode(GridColumnRenderingMode.Virtual))
+                .Paging(paging => paging.PageSize(20))
+                .Pager(pager =>
+                {
+                    pager.Visible(true);
+                    pager.DisplayMode(GridPagerDisplayMode.Full);
+                    pager.ShowPageSizeSelector(true);
+                    pager.AllowedPageSizes(new int[]{10,20,30,40});
+                    pager.ShowInfo(true);
+                    pager.ShowNavigationButtons(true);
+                })
+                .ColumnMinWidth(50)
+                @*  .Height(UICommonConsts.GRID_HEIGHT_DEFAULT) *@
+                @* .Export(e => e.Enabled(true)) *@
+                @*  .OnExporting("exporting") *@
+                .Columns(columns =>
+                {
+                    columns.AddFor(m => m.MaNhanVien).AllowResizing(true).Caption("Mã nhân viên").AllowResizing(true)
+                    .AllowEditing(false);
+                    columns.AddFor(m => m.TenNhanVien).AllowResizing(true).Caption("Tên nhân viên").AllowResizing(true);
+                    columns.AddFor(m => m.PhongBanId).AllowResizing(true).Caption("Phòng ban").AllowResizing(true)
+                    .Width(125)
+                    .Lookup(lookup => lookup
+                    .DataSource(Model.PhongBans)
+                    .DisplayExpr(nameof(StringAsLookupItem.Name))
+                    .ValueExpr(nameof(StringAsLookupItem.Value))
+                 );
+                    columns.AddFor(m => m.ChucVuId).AllowResizing(true).Caption("Chức vụ").AllowResizing(true)
+                  .Width(125)
+                  .Lookup(lookup => lookup
+                  .DataSource(Model.ChucVus)
+                  .DisplayExpr(nameof(StringAsLookupItem.Name))
+                  .ValueExpr(nameof(StringAsLookupItem.Value))
+                 );
+                    columns.AddFor(m => m.GioiTinh).AllowResizing(true).Caption("Giới tính").AllowResizing(true)
+                    .Width(125)
+                  .Lookup(lookup => lookup
+                  .DataSource("dataGender")
+                  .DisplayExpr(nameof(StringAsLookupItem.Name))
+                  .ValueExpr(nameof(StringAsLookupItem.Value))
+                 );
+                    columns.AddFor(m => m.NgaySinh).AllowResizing(true).Caption("Ngày sinh");
+                    columns.AddFor(m => m.NguoiTao).AllowResizing(true).Caption("Người tạo");
+                    columns.AddFor(m => m.DienThoai).AllowResizing(true).Caption("Điện thoại");
+                    columns.AddFor(m => m.Email).AllowResizing(true).Caption("Email");
+                    columns.AddFor(m => m.QueQuan).AllowResizing(true).Caption("Quê quán");
+                    columns.AddFor(m => m.CCCD).Caption("CCCD");
+                    columns.AddFor(m => m.NgayTao).AllowResizing(true).Caption("Ngày tạo").SortOrder(SortOrder.Desc);
+                    columns.AddFor(m => m.Id).AllowResizing(true).Caption("Id").Visible(false);
+                })
+                .OnInitNewRow("OnInitNewRow")
+                .OnEditingStart("OnRowUpdating")
+                .DataSource(d => d.Mvc()
+                    .Controller(typeof(NhanVienController).GetControllerName())
+                    .LoadAction(nameof(NhanVienController.LoadData)).LoadMethod("GET")
+                   @*  .LoadParams(new
+                    {
+                        PhongBanId = new JS("() => document.getElementById('PhongBanId')")
+                    }) *@
+                    .InsertAction(nameof(NhanVienController.Insert)).InsertMethod("POST")
+                    .UpdateAction(nameof(NhanVienController.Update)).UpdateMethod("POST")
+                    .DeleteAction(nameof(NhanVienController.Delete)).DeleteMethod("POST")
+                    .Key(nameof(NhanVien.Id))
+                )
+            )
+
+
+
+
+<script>
+   
+
+
+    // $("#PhongBanId").on("change", () => {
+    //     renderTable()
+    // })
+
+    // function renderTable() {
+    //     var dataGrid = $("#gridContainer").dxDataGrid("instance");
+    //     dataGrid.option("dataSource.loadParams");
+    //     dataGrid.refresh();
+    // }
+
+    // function getElementById(PhongBanId) {
+    //     var Idphongban = $('#PhongBanId').val();
+    //     return Idphongban;
+    // }
+
+    function dataGender() {
+        var listGender = [
+            {
+                "Name": "Nam",
+                "Value": 1
+            },
+            {
+                "Name": "Nữ",
+                "Value": 2
+            },
+        ];
+        return listGender;
+    }
+    function OnRowUpdating(e) {
+        setAllowEditing(e, false);
+    }
+    async function OnInitNewRow(e) {
+        setAllowEditing(e, true);
+
+        e.promise = getDefaultData().then(data => {
+            e.data.MaNhanVien = data;
+        });
+    }
+
+    async function getDefaultData() {
+        return await $.ajax({
+            url: '/NhanVien/GetLastEmployeeCode',
+            type: 'GET'
+        });
+    }
+
+    function setAllowEditing(e, isUpdate) {
+       e.component.columnOption("NgayTao", "allowEditing", isUpdate);
+    }
+</script>
